@@ -5,7 +5,8 @@ import { Session } from '@auth0/nextjs-auth0';
 // Force rebuild - Environment variables are loaded at runtime
 export const runtime = 'nodejs';
 
-const handler = () => {
+// Create the handler dynamically to avoid build-time execution
+const createHandler = () => {
   // Runtime check for environment variables
   if (typeof process.env.AUTH0_SECRET === 'undefined') {
     throw new Error('AUTH0_SECRET is not defined');
@@ -31,5 +32,6 @@ const handler = () => {
   });
 };
 
-export const GET = handler();
-export const POST = handler(); 
+// Export dynamic route handlers
+export const GET = createHandler;
+export const POST = createHandler; 
