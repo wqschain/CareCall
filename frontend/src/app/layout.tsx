@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { ThemeProvider as NextThemesProvider } from 'next-themes'
+import { Providers } from './providers'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
@@ -19,15 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <NextThemesProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <Providers>
           {children}
           <Toaster />
-        </NextThemesProvider>
+        </Providers>
       </body>
     </html>
   )
