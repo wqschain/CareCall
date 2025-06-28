@@ -22,31 +22,64 @@ interface Recipient {
 }
 
 async function getRecipients(): Promise<Recipient[]> {
-  const response = await fetch('/api/recipients')
+  const response = await fetch('/api/recipients', {
+    credentials: 'include'
+  })
   if (!response.ok) {
-    throw new Error('Failed to fetch recipients')
+    const error = await response.json().catch(() => ({ detail: 'Failed to fetch recipients' }))
+    throw new Error(error.detail || 'Failed to fetch recipients')
   }
   return response.json()
 }
 
+function ErrorFallback({ error, resetErrorBoundary }: { error: Error, resetErrorBoundary: () => void }) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="text-center">
+          <AlertTriangle className="mx-auto h-8 w-8 text-red-500" />
+          <p className="mt-2 text-muted-foreground">{error.message}</p>
+          <p className="mt-4">
+            <Button onClick={resetErrorBoundary}>Try Again</Button>
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function RecipientList() {
   const { toast } = useToast()
-  const { data: recipients, error, isLoading } = useQuery({
+  const { data: recipients, error, isLoading, refetch } = useQuery({
     queryKey: ['recipients'],
     queryFn: getRecipients,
+    retry: 1
   })
 
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load recipients",
+      })
+    }
+  }, [error, toast])
+
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <p className="text-muted-foreground">Loading recipients...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (error) {
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: "Failed to load recipients. Please try again.",
-    })
-    return null
+    return <ErrorFallback error={error as Error} resetErrorBoundary={() => refetch()} />
   }
 
   if (!recipients?.length) {
@@ -103,17 +136,21 @@ export function RecipientList() {
                       try {
                         const response = await fetch(`/api/recipients/${recipient.id}/call-now`, {
                           method: 'POST',
+                          credentials: 'include'
                         })
-                        if (!response.ok) throw new Error()
+                        if (!response.ok) {
+                          const error = await response.json().catch(() => ({ detail: 'Failed to initiate call' }))
+                          throw new Error(error.detail)
+                        }
                         toast({
                           title: "Call Initiated",
                           description: "The check-in call has been started.",
                         })
-                      } catch {
+                      } catch (error) {
                         toast({
                           variant: "destructive",
                           title: "Error",
-                          description: "Failed to initiate call. Please try again.",
+                          description: error instanceof Error ? error.message : "Failed to initiate call",
                         })
                       }
                     }}
