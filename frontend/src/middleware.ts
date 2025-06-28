@@ -5,6 +5,6 @@ export default withMiddlewareAuthRequired();
 export const config = {
   matcher: [
     '/dashboard/:path*',  // Protect dashboard routes
-    '/api/(?!auth).*'     // Protect API routes except auth routes
+    '/api/((?!auth).)*'  // Protect API routes except auth routes
   ]
 }; 
