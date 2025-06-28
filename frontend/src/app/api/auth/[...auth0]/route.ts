@@ -7,10 +7,15 @@ export const runtime = 'nodejs';
 
 // Create the handler dynamically to avoid build-time execution
 const createHandler = () => {
-  // Runtime check for environment variables
-  if (typeof process.env.AUTH0_SECRET === 'undefined') {
-    throw new Error('AUTH0_SECRET is not defined');
-  }
+  // Log environment state
+  console.log('Auth0 Environment Check:', {
+    hasSecret: !!process.env.AUTH0_SECRET,
+    hasBaseUrl: !!process.env.AUTH0_BASE_URL,
+    hasIssuerUrl: !!process.env.AUTH0_ISSUER_BASE_URL,
+    hasClientId: !!process.env.AUTH0_CLIENT_ID,
+    hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
+    nodeEnv: process.env.NODE_ENV,
+  });
   
   return handleAuth({
     login: handleLogin({
