@@ -4,5 +4,4 @@ import { handleAuth } from '@auth0/nextjs-auth0';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const { GET, POST } = handleAuth();
-export { GET, POST }; 
+export const ALL = handleAuth(); 
