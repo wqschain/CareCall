@@ -163,3 +163,6 @@ media/
 *.pyd
 .Python
 *.so 
+# Production environment files
+.env.prod
+env.yaml
