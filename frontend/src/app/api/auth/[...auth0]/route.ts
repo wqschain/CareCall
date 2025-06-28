@@ -6,14 +6,23 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 // Log environment state
-console.log('Auth0 Environment Check:', {
+const envCheck = {
   hasSecret: !!process.env.AUTH0_SECRET,
   hasBaseUrl: !!process.env.AUTH0_BASE_URL,
   hasIssuerUrl: !!process.env.AUTH0_ISSUER_BASE_URL,
   hasClientId: !!process.env.AUTH0_CLIENT_ID,
   hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
   nodeEnv: process.env.NODE_ENV,
-});
+};
 
-// Export the GET and POST handlers directly from handleAuth()
-export const { GET, POST } = handleAuth(); 
+console.log('Auth0 Environment Check:', envCheck);
+
+// If any required env vars are missing, throw an error
+if (!Object.values(envCheck).slice(0, -1).every(Boolean)) {
+  throw new Error('Missing required Auth0 environment variables');
+}
+
+// Initialize handlers at module level
+const handlers = handleAuth();
+export const GET = handlers.GET;
+export const POST = handlers.POST; 
