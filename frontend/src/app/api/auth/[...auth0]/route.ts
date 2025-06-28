@@ -17,6 +17,7 @@ console.log('Auth0 Environment Check:', {
   nodeEnv: process.env.NODE_ENV,
 });
 
+// Create a single instance of the auth handler
 const auth0Handler = handleAuth({
   login: handleLogin({
     returnTo: '/dashboard',
@@ -36,20 +37,40 @@ const auth0Handler = handleAuth({
   }),
 });
 
-export async function GET(
+// Handle all HTTP methods
+async function handler(
   req: Request,
-  context: { params: { auth0: string[] } }
 ) {
   try {
+    // Log the request URL and method for debugging
+    console.log('Auth request:', {
+      url: req.url,
+      method: req.method,
+    });
+
+    // Pass the request to the auth handler
     const res = await auth0Handler(req);
+    
+    // If no response, return a 404
+    if (!res) {
+      console.error('No response from auth handler');
+      return NextResponse.json(
+        { error: 'Not Found' },
+        { status: 404 }
+      );
+    }
+
     return res;
   } catch (error) {
+    // Log the full error for debugging
     console.error('Auth error:', error);
+    
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
 }
 
-export const POST = GET; 
+export const GET = handler;
+export const POST = handler; 
