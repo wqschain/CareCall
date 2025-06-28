@@ -12,6 +12,9 @@ const nextConfig = {
     AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET,
     API_BASE_URL: process.env.API_BASE_URL || 'https://api.carecall.club',
   },
+  experimental: {
+    serverActions: true,
+  },
   async redirects() {
     return [
       {

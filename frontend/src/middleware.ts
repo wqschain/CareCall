@@ -1,5 +1,7 @@
 import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';
 
+export const runtime = 'nodejs';
+
 export default withMiddlewareAuthRequired();
 
 export const config = {
