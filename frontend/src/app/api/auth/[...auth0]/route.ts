@@ -1,6 +1,4 @@
-import { handleAuth, handleLogin, handleCallback, handleLogout } from '@auth0/nextjs-auth0';
-import { NextApiRequest, NextApiResponse } from 'next';
-import { Session } from '@auth0/nextjs-auth0';
+import { handleAuth } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 
 // Force dynamic route handling for auth
@@ -17,54 +15,22 @@ console.log('Auth0 Environment Check:', {
   nodeEnv: process.env.NODE_ENV,
 });
 
-// Create a single instance of the auth handler
-const auth0Handler = handleAuth({
-  login: handleLogin({
-    returnTo: '/dashboard',
-    authorizationParams: {
-      prompt: 'login',
-      response_type: 'code',
-      scope: 'openid profile email',
-    },
-  }),
-  callback: handleCallback({
-    afterCallback: (_req: NextApiRequest, _res: NextApiResponse, session: Session) => {
-      return session;
-    },
-  }),
-  logout: handleLogout({
-    returnTo: '/',
-  }),
-});
+// Create the auth handler with minimal configuration
+const handler = handleAuth();
 
-// Handle all HTTP methods
-async function handler(
-  req: Request,
-) {
+// Export a simple handler that just passes the request through
+export async function GET(req: Request) {
   try {
-    // Log the request URL and method for debugging
     console.log('Auth request:', {
       url: req.url,
       method: req.method,
+      pathname: new URL(req.url).pathname
     });
 
-    // Pass the request to the auth handler
-    const res = await auth0Handler(req);
-    
-    // If no response, return a 404
-    if (!res) {
-      console.error('No response from auth handler');
-      return NextResponse.json(
-        { error: 'Not Found' },
-        { status: 404 }
-      );
-    }
-
-    return res;
+    const response = await handler(req);
+    return response;
   } catch (error) {
-    // Log the full error for debugging
     console.error('Auth error:', error);
-    
     return NextResponse.json(
       { error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -72,5 +38,5 @@ async function handler(
   }
 }
 
-export const GET = handler;
-export const POST = handler; 
+// Handle POST requests the same way
+export const POST = GET; 
