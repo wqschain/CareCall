@@ -1,36 +1,41 @@
 "use client"
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from './ui/button';
 import { RecipientList } from './recipient-list';
 import { useToast } from './ui/use-toast';
 
+interface User {
+  name: string;
+  email: string;
+}
+
+function LoadingFallback() {
+  return <div>Loading...</div>;
+}
+
 export default function DashboardContent() {
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
   // Fetch user data
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch('/api/auth/me');
-        if (!response.ok) {
-          throw new Error('Not authenticated');
-        }
-        const userData = await response.json();
-        setUser(userData);
-      } catch (error) {
+  const { data: user, isLoading: userLoading } = useQuery<User>({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const response = await fetch('/api/auth/me');
+      if (!response.ok) {
         router.push('/login');
+        throw new Error('Not authenticated');
       }
-    };
-    fetchUser();
-  }, [router]);
+      return response.json();
+    },
+    retry: false
+  });
 
   // Fetch recipients
-  const { data: recipients = [], isLoading } = useQuery({
+  const { data: recipients = [], isLoading: recipientsLoading } = useQuery({
     queryKey: ['recipients'],
     queryFn: async () => {
       const response = await fetch('/api/recipients', {
@@ -41,6 +46,7 @@ export default function DashboardContent() {
       }
       return response.json();
     },
+    enabled: !!user,
   });
 
   const handleLogout = async () => {
@@ -55,6 +61,10 @@ export default function DashboardContent() {
       });
     }
   };
+
+  if (userLoading) {
+    return <LoadingFallback />;
+  }
 
   if (!user) {
     return null;
@@ -77,11 +87,13 @@ export default function DashboardContent() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div>Loading recipients...</div>
-      ) : (
-        <RecipientList recipients={recipients} />
-      )}
+      <Suspense fallback={<LoadingFallback />}>
+        {recipientsLoading ? (
+          <div>Loading recipients...</div>
+        ) : (
+          <RecipientList recipients={recipients} />
+        )}
+      </Suspense>
     </div>
   );
 } 
