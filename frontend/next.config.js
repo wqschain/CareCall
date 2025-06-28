@@ -4,9 +4,7 @@ const nextConfig = {
   images: {
     domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com'],
   },
-  // Explicitly configure environment variables
-  serverRuntimeConfig: {
-    // Will only be available on the server side
+  env: {
     AUTH0_SECRET: process.env.AUTH0_SECRET,
     AUTH0_BASE_URL: process.env.AUTH0_BASE_URL,
     AUTH0_ISSUER_BASE_URL: process.env.AUTH0_ISSUER_BASE_URL,
