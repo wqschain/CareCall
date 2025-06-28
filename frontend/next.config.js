@@ -13,8 +13,8 @@ const nextConfig = {
         destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/email`,
       },
       {
-        source: '/api/auth/verify',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`,
+        source: '/api/auth/verify:query*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify:query*`,
       },
       {
         source: '/api/:path*',
