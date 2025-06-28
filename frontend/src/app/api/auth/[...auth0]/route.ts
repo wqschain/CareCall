@@ -15,38 +15,21 @@ console.log('Auth0 Environment Check:', {
   nodeEnv: process.env.NODE_ENV,
 });
 
-// Create the auth handler with configuration
-const handler = handleAuth({
-  async callback(req: Request) {
-    try {
-      // Get the URL from the request
-      const url = new URL(req.url);
-      console.log('Callback URL:', url.toString());
-      
-      // Let Auth0 handle the callback
-      const response = await handleAuth()(req);
-      return response;
-    } catch (error) {
-      console.error('Callback error:', error);
-      return NextResponse.json(
-        { error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
-    }
-  }
-});
+// Create a basic handler with no configuration
+const auth0Handler = handleAuth();
 
-// Export the handler for both GET and POST methods
-export async function GET(req: Request) {
+// Simple handler function that just passes through to Auth0
+async function handler(req: Request) {
   try {
+    // Log request details
     console.log('Auth request:', {
       url: req.url,
       method: req.method,
       pathname: new URL(req.url).pathname
     });
 
-    const response = await handler(req);
-    return response;
+    // Let Auth0 handle everything
+    return await auth0Handler(req);
   } catch (error) {
     console.error('Auth error:', error);
     return NextResponse.json(
@@ -56,5 +39,6 @@ export async function GET(req: Request) {
   }
 }
 
-// Handle POST requests the same way
-export const POST = GET; 
+// Export the handler for both GET and POST
+export const GET = handler;
+export const POST = handler; 
