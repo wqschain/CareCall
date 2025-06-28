@@ -70,13 +70,9 @@ export default function LoginPage() {
         });
       } else {
         // Verify code
-        const response = await fetch(`${API_URL}/api/auth/verify`, {
+        const response = await fetch(`${API_URL}/api/auth/verify?email=${encodeURIComponent(values.email)}&code=${encodeURIComponent(values.code!)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: values.email,
-            code: values.code,
-          }),
         });
 
         if (!response.ok) {
