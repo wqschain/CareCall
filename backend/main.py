@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from jose import jwt, JWTError
 import httpx
 from typing import Optional
@@ -9,6 +10,12 @@ from models.base import engine, Base
 from api import recipients, checkins, auth
 
 app = FastAPI(title="CareCall API")
+
+# Ensure media directory exists
+os.makedirs("media", exist_ok=True)
+
+# Mount media directory
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 # CORS configuration
 app.add_middleware(
