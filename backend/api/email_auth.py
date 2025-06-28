@@ -97,6 +97,7 @@ async def get_current_user(
 async def login_email(email: EmailLoginRequest, db: AsyncSession = Depends(get_db)):
     """Start email login process by sending verification code"""
     logger.info(f"Login attempt for email: {email.email}")
+    logger.debug(f"Using Resend API key: {api_key[:5]}...")  # Only log first 5 chars for security
     
     # Check rate limit (max 5 attempts per 15 minutes)
     now = datetime.utcnow()
@@ -123,8 +124,9 @@ async def login_email(email: EmailLoginRequest, db: AsyncSession = Depends(get_d
     
     # Send email
     try:
+        logger.debug("Attempting to send email via Resend...")
         params = {
-            "from": "onboarding@resend.dev",
+            "from": "noreply@carecall.club",  # Using verified domain
             "to": [email.email],
             "subject": "Your CareCall Login Code",
             "html": f"""
@@ -195,7 +197,7 @@ async def login_email(email: EmailLoginRequest, db: AsyncSession = Depends(get_d
         logger.error(f"Failed to send verification code to {email.email}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send verification code"
+            detail=f"Failed to send verification code: {str(e)}"
         )
 
 @router.post("/verify")

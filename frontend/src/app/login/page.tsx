@@ -50,7 +50,7 @@ export default function LoginPage() {
     try {
       if (!isCodeSent) {
         // Request verification code
-        const response = await fetch('/api/auth/email/login', {
+        const response = await fetch('/api/auth/login/email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: values.email }),
