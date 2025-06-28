@@ -24,6 +24,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   code: z.string()
@@ -50,14 +52,15 @@ export default function LoginPage() {
     try {
       if (!isCodeSent) {
         // Request verification code
-        const response = await fetch('/api/auth/login/email', {
+        const response = await fetch(`${API_URL}/api/auth/login/email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: values.email }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to send verification code');
+          const error = await response.json();
+          throw new Error(error.detail || 'Failed to send verification code');
         }
 
         setIsCodeSent(true);
@@ -67,7 +70,7 @@ export default function LoginPage() {
         });
       } else {
         // Verify code
-        const response = await fetch('/api/auth/email/verify', {
+        const response = await fetch(`${API_URL}/api/auth/email/verify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -77,7 +80,8 @@ export default function LoginPage() {
         });
 
         if (!response.ok) {
-          throw new Error('Invalid verification code');
+          const error = await response.json();
+          throw new Error(error.detail || 'Invalid verification code');
         }
 
         const data = await response.json();
