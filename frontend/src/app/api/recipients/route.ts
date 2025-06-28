@@ -16,22 +16,19 @@ export async function GET() {
     const response = await fetch(`${BACKEND_URL}/api/recipients`, {
       headers: {
         'Authorization': `Bearer ${session.accessToken}`
-      }
+      },
+      credentials: 'include'
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to fetch recipients' }));
-      return NextResponse.json(error, { status: response.status });
+      throw new Error('Failed to fetch recipients');
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching recipients:', error);
-    return NextResponse.json(
-      { detail: 'Failed to fetch recipients' },
-      { status: 500 }
-    );
+    return new NextResponse(null, { status: 500 });
   }
 }
 
@@ -51,11 +48,12 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.accessToken}`
       },
+      credentials: 'include',
       body: JSON.stringify(body)
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to create recipient' }));
+      const error = await response.json();
       return NextResponse.json(error, { status: response.status });
     }
 
@@ -76,8 +74,7 @@ export async function OPTIONS() {
     status: 204,
     headers: {
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Origin': '*'
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     },
   });
 } 
