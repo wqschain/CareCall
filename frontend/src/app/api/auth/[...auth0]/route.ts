@@ -5,14 +5,14 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Create a single Auth0 handler object
-const handlers = handleAuth();
+// Create a single handler for all methods
+const handler = handleAuth();
 
-// Export the actual GET/POST functions
-export const GET = handlers.GET;
-export const POST = handlers.POST;
+// Export the handler directly
+export const GET = handler;
+export const POST = handler;
 
-// Custom OPTIONS for CORS preflight
+// Custom OPTIONS handler for CORS
 export const OPTIONS = async (req: Request) => {
   return new NextResponse(null, {
     status: 204,
