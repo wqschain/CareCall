@@ -9,6 +9,14 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/api/auth/login/email',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/email`,
+      },
+      {
+        source: '/api/auth/verify',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`,
+      },
+      {
         source: '/api/:path*',
         destination: `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`,
       },
