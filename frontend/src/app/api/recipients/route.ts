@@ -1,41 +1,48 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@auth0/nextjs-auth0';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://carecall-backend-943219616764.us-east1.run.app';
 
 export async function GET() {
-  const session = await getSession();
-  
-  if (!session?.user) {
+  const cookieStore = cookies();
+  const token = cookieStore.get('auth-token');
+
+  if (!token) {
     return new NextResponse(null, { status: 401 });
   }
 
   try {
     const response = await fetch(`${BACKEND_URL}/api/recipients`, {
       headers: {
-        'Authorization': `Bearer ${session.accessToken}`
-      },
-      credentials: 'include'
+        'Authorization': `Bearer ${token.value}`
+      }
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch recipients');
+      return NextResponse.json(
+        { detail: 'Failed to fetch recipients' },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching recipients:', error);
-    return new NextResponse(null, { status: 500 });
+    return NextResponse.json(
+      { detail: 'Failed to fetch recipients' },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const token = cookieStore.get('auth-token');
   
-  if (!session?.user) {
+  if (!token) {
     return new NextResponse(null, { status: 401 });
   }
 
@@ -46,9 +53,8 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
+        'Authorization': `Bearer ${token.value}`
       },
-      credentials: 'include',
       body: JSON.stringify(body)
     });
 

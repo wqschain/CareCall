@@ -1,12 +1,9 @@
 "use client"
 
 import Link from 'next/link'
-import { useUser } from '@auth0/nextjs-auth0/client'
 import { Button } from '@/components/ui/button'
 
 export function HomeContent() {
-  const { user, isLoading } = useUser();
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container flex flex-col items-center justify-center min-h-screen py-12 space-y-8">
@@ -19,27 +16,12 @@ export function HomeContent() {
           </p>
         </div>
         <div className="space-x-4">
-          {!isLoading && (
-            user ? (
-              <>
-                <Link href="/dashboard">
-                  <Button size="lg">Go to Dashboard</Button>
-                </Link>
-                <Link href="/api/auth/logout">
-                  <Button variant="outline" size="lg">Logout</Button>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/api/auth/login">
-                  <Button size="lg">Get Started</Button>
-                </Link>
-                <Link href="https://github.com/wqschain/carecall" target="_blank">
-                  <Button variant="outline" size="lg">View on GitHub</Button>
-                </Link>
-              </>
-            )
-          )}
+          <Link href="/login">
+            <Button size="lg">Get Started</Button>
+          </Link>
+          <Link href="https://github.com/wqschain/carecall" target="_blank">
+            <Button variant="outline" size="lg">View on GitHub</Button>
+          </Link>
         </div>
         <div className="grid gap-8 pt-12 sm:grid-cols-3">
           <div className="space-y-2 text-center">

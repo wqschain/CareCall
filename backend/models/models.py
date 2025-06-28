@@ -1,44 +1,39 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Text
 from sqlalchemy.orm import relationship
-import enum
+from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .base import Base
-
-class CheckInStatus(enum.Enum):
-    OK = "OK"
-    CONCERN = "CONCERN"
-    EMERGENCY = "EMERGENCY"
-    NO_ANSWER = "NO_ANSWER"
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    auth0_id = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     name = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    recipients = relationship("Recipient", back_populates="caregiver")
+    # Relationships
+    recipients = relationship("Recipient", back_populates="user")
 
 class Recipient(Base):
     __tablename__ = "recipients"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
     name = Column(String)
     phone_number = Column(String)
     condition = Column(String)
-    preferred_time = Column(String)  # Store as HH:MM in UTC
+    preferred_time = Column(String)  # HH:MM in UTC
     emergency_contact_name = Column(String)
     emergency_contact_phone = Column(String)
     emergency_contact_email = Column(String)
-    caregiver_id = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    caregiver = relationship("User", back_populates="recipients")
+    # Relationships
+    user = relationship("User", back_populates="recipients")
     check_ins = relationship("CheckIn", back_populates="recipient")
 
 class CheckIn(Base):
@@ -46,12 +41,12 @@ class CheckIn(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     recipient_id = Column(Integer, ForeignKey("recipients.id"))
-    status = Column(Enum(CheckInStatus))
-    call_sid = Column(String)  # Twilio Call SID
-    recording_url = Column(String, nullable=True)
+    status = Column(String)  # OK, CONCERN, EMERGENCY, NO_ANSWER
     transcript = Column(Text, nullable=True)
-    ai_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    completed_at = Column(DateTime, nullable=True)
+    summary = Column(Text, nullable=True)
+    audio_url = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    call_metadata = Column(JSONB, nullable=True)
 
+    # Relationships
     recipient = relationship("Recipient", back_populates="check_ins") 

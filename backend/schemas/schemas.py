@@ -9,16 +9,22 @@ class UserBase(BaseModel):
     name: str
 
 class UserCreate(UserBase):
-    auth0_id: str
+    pass
 
 class User(UserBase):
     id: int
-    auth0_id: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+class EmailLoginRequest(BaseModel):
+    email: EmailStr
+
+class VerifyCodeRequest(BaseModel):
+    email: EmailStr
+    code: str
 
 class RecipientBase(BaseModel):
     name: str
@@ -32,52 +38,34 @@ class RecipientBase(BaseModel):
 class RecipientCreate(RecipientBase):
     pass
 
-class RecipientUpdate(RecipientBase):
-    name: Optional[str] = None
-    phone_number: Optional[Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]] = None
-    condition: Optional[str] = None
-    preferred_time: Optional[str] = None
-    emergency_contact_name: Optional[str] = None
-    emergency_contact_phone: Optional[Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]] = None
-    emergency_contact_email: Optional[EmailStr] = None
-
 class Recipient(RecipientBase):
     id: int
-    caregiver_id: int
+    user_id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
 class CheckInBase(BaseModel):
-    recipient_id: int
-    status: CheckInStatus
+    status: str  # OK, CONCERN, EMERGENCY, NO_ANSWER
+    transcript: Optional[str] = None
+    summary: Optional[str] = None
+    audio_url: Optional[str] = None
+    metadata: Optional[dict] = None
 
 class CheckInCreate(CheckInBase):
-    call_sid: str
-
-class CheckInUpdate(BaseModel):
-    status: Optional[CheckInStatus] = None
-    recording_url: Optional[str] = None
-    transcript: Optional[str] = None
-    ai_notes: Optional[str] = None
-    completed_at: Optional[datetime] = None
+    recipient_id: int
 
 class CheckIn(CheckInBase):
     id: int
-    call_sid: str
-    recording_url: Optional[str] = None
-    transcript: Optional[str] = None
-    ai_notes: Optional[str] = None
+    recipient_id: int
     created_at: datetime
-    completed_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
-class RecipientWithCheckIns(Recipient):
-    check_ins: List[CheckIn]
-
-    class Config:
-        from_attributes = True 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserBase 

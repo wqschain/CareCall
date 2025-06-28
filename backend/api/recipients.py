@@ -5,15 +5,14 @@ from typing import List
 
 from models.models import Recipient, User
 from schemas.schemas import RecipientCreate, RecipientUpdate, Recipient as RecipientSchema, RecipientWithCheckIns
-from .auth import get_current_user, get_db, requires_permissions
+from .email_auth import get_current_user, get_db
 
 router = APIRouter()
 
 @router.get("/recipients", response_model=List[RecipientSchema])
 async def get_recipients(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    _: str = Depends(requires_permissions(["read:recipients"]))
+    current_user: User = Depends(get_current_user)
 ):
     """Get all recipients for the current user"""
     query = select(Recipient).where(Recipient.caregiver_id == current_user.id)
@@ -46,8 +45,7 @@ async def get_recipient(
 async def create_recipient(
     recipient: RecipientCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    _: str = Depends(requires_permissions(["write:recipients"]))
+    current_user: User = Depends(get_current_user)
 ):
     """Create a new recipient"""
     db_recipient = Recipient(**recipient.dict(), caregiver_id=current_user.id)

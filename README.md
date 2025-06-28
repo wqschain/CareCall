@@ -1,211 +1,117 @@
 # CareCall
 
-An AI-powered wellness check-in system developed during TheSolutionHacks 2024. The system automates regular wellness checks for caregivers and their loved ones through intelligent voice interactions and real-time monitoring.
-
-## Project Overview
-
-CareCall addresses the growing need for efficient remote care monitoring by leveraging artificial intelligence and automated communications. The system conducts regular check-ins via phone calls, analyzes responses for potential concerns, and provides immediate notifications to caregivers when attention is needed.
+CareCall is an automated check-in system that helps caregivers stay connected with their loved ones through regular, AI-powered phone calls.
 
 ## Features
 
-- Natural language processing for human-like conversations
-- Automated scheduled check-in calls
-- Real-time alert system for concerning responses
-- Comprehensive wellness tracking dashboard
-- Secure authentication and data protection
-- Detailed analytics and reporting
+- **Automated Check-ins**: Schedule regular phone calls to check on your loved ones
+- **AI-Powered Conversations**: Natural conversations powered by Google's Vertex AI Gemini
+- **Voice Processing**: High-quality speech-to-text transcription using Vertex AI
+- **Email Authentication**: Secure, passwordless authentication using email verification
+- **Emergency Alerts**: Immediate notifications when concerns are detected
+- **Dashboard**: Easy management of recipients and check-in schedules
 
 ## Tech Stack
 
-### Frontend Architecture
+### Backend
+- **Framework**: FastAPI
+- **Database**: PostgreSQL with SQLAlchemy
+- **Authentication**: JWT with email verification via Resend
+- **AI/ML**: Google Cloud Vertex AI Gemini
+- **Deployment**: Google Cloud Run
+
+### Frontend
 - **Framework**: Next.js 14
-- **Language**: TypeScript 5
-- **State Management**: TanStack Query (React Query)
-- **Form Handling**: React Hook Form with Zod validation
-- **Styling**: 
-  - TailwindCSS for utility-first CSS
-  - shadcn/ui for component library
-  - CSS Modules for component-specific styles
-- **Authentication**: Auth0 integration
-- **API Integration**: Axios with custom hooks
-- **Build Tools**: 
-  - Webpack (via Next.js)
-  - PostCSS
-  - ESLint & Prettier
-
-### Backend Architecture
-- **Framework**: FastAPI (Python 3.11)
-- **Database**: 
-  - SQLite with async support
-  - SQLAlchemy ORM
-  - Alembic for migrations
-- **AI/ML Services**:
-  - Google Cloud Vertex AI for conversation processing
-  - OpenAI Whisper for speech-to-text
-- **External Services**:
-  - Twilio for telephony
-  - SendGrid for email notifications
-  - Google Cloud Text-to-Speech
-- **Authentication**: JWT with Auth0
-- **Testing**: pytest with async support
-
-### DevOps
-- **CI/CD**: GitHub Actions
-- **Containerization**: Docker
-- **Cloud Deployment**:
-  - Backend: Google Cloud Run
-  - Frontend: Vercel
-- **Monitoring**: Google Cloud Operations
-
-## Project Structure
-
-```
-CareCall/
-├── backend/
-│   ├── api/                    # API endpoints
-│   ├── models/                 # Database models
-│   ├── schemas/                # Pydantic schemas
-│   ├── services/              # Business logic
-│   │   └── call_pipeline.py   # Call handling
-│   ├── tests/                 # Test suites
-│   ├── Dockerfile
-│   ├── main.py               # App entry
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── app/              # Next.js pages
-│   │   ├── components/       # React components
-│   │   ├── lib/             # Utilities
-│   │   └── types/           # TypeScript types
-│   ├── public/              # Static assets
-│   └── package.json
-├── .github/                  # CI/CD workflows
-├── .gitignore
-├── LICENSE
-└── README.md
-```
+- **UI**: Tailwind CSS with shadcn/ui
+- **State Management**: TanStack Query
+- **Deployment**: Vercel
 
 ## Getting Started
 
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
+- PostgreSQL
+- Resend account
 - Google Cloud account
-- Twilio account
-- Auth0 account
-- SendGrid account
 
 ### Environment Variables
 
 #### Backend (.env)
 ```
-AUTH0_DOMAIN=your-domain.auth0.com
-AUTH0_AUDIENCE=your-audience
-GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
-TWILIO_ACCOUNT_SID=your-sid
-TWILIO_AUTH_TOKEN=your-token
-SENDGRID_API_KEY=your-key
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/carecall
+JWT_SECRET=your-jwt-secret-key
+RESEND_API_KEY=your-resend-api-key
 ```
 
-#### Frontend (.env.local)
+#### Frontend (.env)
 ```
-AUTH0_SECRET=your-secret
-AUTH0_BASE_URL=http://localhost:3000
-AUTH0_ISSUER_BASE_URL=https://your-domain.auth0.com
-AUTH0_CLIENT_ID=your-client-id
-AUTH0_CLIENT_SECRET=your-client-secret
-API_BASE_URL=http://localhost:8000
+BACKEND_URL=http://localhost:8000
+JWT_SECRET=your-jwt-secret-key
+RESEND_API_KEY=your-resend-api-key
 ```
 
 ### Installation
 
 1. Clone the repository
 ```bash
-git clone https://github.com/wqschain/carecall.git
+git clone https://github.com/yourusername/carecall.git
 cd carecall
 ```
 
-2. Set up backend
+2. Set up the backend
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-3. Set up frontend
-```bash
-cd frontend
-npm install
-```
-
-### Running the Application
-
-1. Start the backend server
-```bash
-cd backend
+alembic upgrade head
 uvicorn main:app --reload
 ```
 
-2. Start the frontend development server
+3. Set up the frontend
 ```bash
 cd frontend
+npm install
 npm run dev
 ```
 
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-
 ## Development
+
+### Database Migrations
+```bash
+cd backend
+alembic revision -m "description_of_changes"
+alembic upgrade head
+```
 
 ### Running Tests
 ```bash
-# Backend tests
 cd backend
 pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-### Code Style
-```bash
-# Backend
-flake8
-
-# Frontend
-npm run lint
 ```
 
 ## Deployment
 
-The application is set up for deployment to:
-- Backend: Google Cloud Run
-- Frontend: Vercel
+The application is automatically deployed using GitHub Actions:
+- Backend deploys to Google Cloud Run
+- Frontend deploys to Vercel
 
-Deployment is automated through GitHub Actions when pushing to the main branch.
+Required secrets for deployment:
+- `GCP_SA_KEY`: Google Cloud service account key
+- `VERCEL_TOKEN`: Vercel deployment token
+- `JWT_SECRET`: Secret key for JWT signing
+- `RESEND_API_KEY`: API key from Resend
+- `DATABASE_URL`: Production database URL
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## Hackathon Context
-
-This project was developed during TheSolutionHacks 2025. The goal was to demonstrate how AI and automation can be leveraged to solve real world problems.
-
-## Contact
-
-- Developer: Waqas Rana
-- X (Twitter): [@wqschain](https://x.com/wqschain)
-- Project Link: [https://github.com/wqschain/CarecCall](https://github.com/wqschain/CareCall)
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details. 
