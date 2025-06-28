@@ -69,14 +69,11 @@ export default function LoginPage() {
           description: 'Please check your email for the verification code.',
         });
       } else {
-        // Verify code
-        const response = await fetch('/api/auth/verify', {
+        // Verify code - using query parameters as expected by the backend
+        const response = await fetch(`/api/auth/verify?email=${encodeURIComponent(values.email)}&code=${encodeURIComponent(values.code!)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: values.email,
-            code: values.code,
-          }),
+          body: JSON.stringify({}),
         });
 
         if (!response.ok) {
