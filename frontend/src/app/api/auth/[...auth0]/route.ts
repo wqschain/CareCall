@@ -3,7 +3,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { Session } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 
-// Force rebuild - Environment variables are loaded at runtime
+// Force dynamic route handling for auth
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 // Log environment state
@@ -16,27 +17,32 @@ console.log('Auth0 Environment Check:', {
   nodeEnv: process.env.NODE_ENV,
 });
 
-// Create the auth handler with proper response handling
-export const GET = async (req: Request) => {
+const auth0Handler = handleAuth({
+  login: handleLogin({
+    returnTo: '/dashboard',
+    authorizationParams: {
+      prompt: 'login',
+      response_type: 'code',
+      scope: 'openid profile email',
+    },
+  }),
+  callback: handleCallback({
+    afterCallback: (_req: NextApiRequest, _res: NextApiResponse, session: Session) => {
+      return session;
+    },
+  }),
+  logout: handleLogout({
+    returnTo: '/',
+  }),
+});
+
+export async function GET(
+  req: Request,
+  context: { params: { auth0: string[] } }
+) {
   try {
-    return await handleAuth({
-      login: handleLogin({
-        returnTo: '/dashboard',
-        authorizationParams: {
-          prompt: 'login',
-          response_type: 'code',
-          scope: 'openid profile email',
-        },
-      }),
-      callback: handleCallback({
-        afterCallback: (_req: NextApiRequest, _res: NextApiResponse, session: Session) => {
-          return session;
-        },
-      }),
-      logout: handleLogout({
-        returnTo: '/',
-      }),
-    })(req);
+    const res = await auth0Handler(req);
+    return res;
   } catch (error) {
     console.error('Auth error:', error);
     return NextResponse.json(
@@ -44,6 +50,6 @@ export const GET = async (req: Request) => {
       { status: 500 }
     );
   }
-};
+}
 
 export const POST = GET; 
