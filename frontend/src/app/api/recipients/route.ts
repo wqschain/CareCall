@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@auth0/nextjs-auth0';
 
+export const dynamic = 'force-dynamic';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'https://carecall-backend-943219616764.us-east1.run.app';
+
 export async function GET() {
   const session = await getSession();
   
@@ -9,21 +13,25 @@ export async function GET() {
   }
 
   try {
-    const response = await fetch(`${process.env.BACKEND_URL}/recipients`, {
+    const response = await fetch(`${BACKEND_URL}/api/recipients`, {
       headers: {
         'Authorization': `Bearer ${session.accessToken}`
       }
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch recipients');
+      const error = await response.json().catch(() => ({ detail: 'Failed to fetch recipients' }));
+      return NextResponse.json(error, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching recipients:', error);
-    return new NextResponse(null, { status: 500 });
+    return NextResponse.json(
+      { detail: 'Failed to fetch recipients' },
+      { status: 500 }
+    );
   }
 }
 
@@ -37,7 +45,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${process.env.BACKEND_URL}/recipients`, {
+    const response = await fetch(`${BACKEND_URL}/api/recipients`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -47,7 +55,7 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ detail: 'Failed to create recipient' }));
       return NextResponse.json(error, { status: response.status });
     }
 
@@ -69,6 +77,7 @@ export async function OPTIONS() {
     headers: {
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Origin': '*'
     },
   });
 } 
