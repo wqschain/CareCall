@@ -32,6 +32,7 @@ origins = [
     "http://localhost:3000",
     "https://carecall.club",
     "https://www.carecall.club",
+    "https://e0a3-173-206-116-74.ngrok-free.app",
 ]
 
 app.add_middleware(
