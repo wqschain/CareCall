@@ -1,18 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlalchemy import select
 from typing import List
 
 from models.models import Recipient, User
 from schemas.schemas import RecipientCreate, RecipientUpdate, Recipient as RecipientSchema, RecipientWithCheckIns
-from .auth import get_current_user, get_db
+from .auth import get_current_user, get_db, requires_permissions
 
 router = APIRouter()
 
 @router.get("/recipients", response_model=List[RecipientSchema])
 async def get_recipients(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    _: str = Depends(requires_permissions(["read:recipients"]))
 ):
     """Get all recipients for the current user"""
     query = select(Recipient).where(Recipient.caregiver_id == current_user.id)
@@ -45,7 +46,8 @@ async def get_recipient(
 async def create_recipient(
     recipient: RecipientCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    _: str = Depends(requires_permissions(["write:recipients"]))
 ):
     """Create a new recipient"""
     db_recipient = Recipient(**recipient.dict(), caregiver_id=current_user.id)
@@ -113,6 +115,9 @@ async def trigger_call(
     current_user: User = Depends(get_current_user)
 ):
     """Trigger an immediate check-in call for a recipient"""
+    # Import here to avoid circular imports
+    from services.call_pipeline import trigger_checkin
+    
     query = select(Recipient).where(
         Recipient.id == recipient_id,
         Recipient.caregiver_id == current_user.id
@@ -125,9 +130,6 @@ async def trigger_call(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipient not found"
         )
-    
-    # Import here to avoid circular imports
-    from services.call_pipeline import trigger_checkin
     
     try:
         check_in = await trigger_checkin(recipient_id)

@@ -35,11 +35,26 @@ jobs:
         npm install
         
     - name: Run backend tests
+      env:
+        AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+        AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+        AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+        AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+        GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+        TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
       run: |
         cd backend
         pytest
         
     - name: Run frontend tests
+      env:
+        AUTH0_SECRET: ${{ secrets.AUTH0_SECRET }}
+        AUTH0_BASE_URL: 'https://carecall.club'
+        AUTH0_ISSUER_BASE_URL: ${{ secrets.AUTH0_ISSUER_BASE_URL }}
+        AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+        AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
       run: |
         cd frontend
         npm run test
@@ -71,6 +86,17 @@ jobs:
         credentials_json: ${{ secrets.GCP_SA_KEY }}
         
     - name: Build and push Docker image
+      env:
+        AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+        AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+        AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+        AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+        GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+        TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+        FRONTEND_URL: 'https://carecall.club'
+        BASE_URL: 'https://api.carecall.club'
       run: |
         cd backend
         gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/carecall-backend
@@ -81,7 +107,16 @@ jobs:
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/carecall-backend \
           --platform managed \
           --region ${{ secrets.GCP_REGION }} \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --set-env-vars "AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" \
+          --set-env-vars "AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" \
+          --set-env-vars "AUTH0_CLIENT_SECRET=${{ secrets.AUTH0_CLIENT_SECRET }}" \
+          --set-env-vars "AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" \
+          --set-env-vars "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" \
+          --set-env-vars "TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }}" \
+          --set-env-vars "TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }}" \
+          --set-env-vars "FRONTEND_URL=https://carecall.club" \
+          --set-env-vars "BASE_URL=https://api.carecall.club"
 
   deploy-frontend:
     needs: test
@@ -98,4 +133,11 @@ jobs:
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
         working-directory: ./frontend
-        vercel-args: '--prod' 
+        vercel-args: '--prod'
+      env:
+        AUTH0_SECRET: ${{ secrets.AUTH0_SECRET }}
+        AUTH0_BASE_URL: 'https://carecall.club'
+        AUTH0_ISSUER_BASE_URL: ${{ secrets.AUTH0_ISSUER_BASE_URL }}
+        AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+        AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+        API_BASE_URL: 'https://api.carecall.club' 

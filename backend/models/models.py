@@ -33,7 +33,6 @@ class Recipient(Base):
     preferred_time = Column(String)  # Store as HH:MM in UTC
     emergency_contact_name = Column(String)
     emergency_contact_phone = Column(String)
-    emergency_contact_email = Column(String)
     caregiver_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

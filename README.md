@@ -204,7 +204,7 @@ This project was developed during TheSolutionHacks 2025. The goal was to demonst
 
 - Developer: Waqas Rana
 - X (Twitter): [@wqschain](https://x.com/wqschain)
-- Project Link: [https://github.com/wqschain/carecall](https://github.com/wqschain/carecall)
+- Project Link: [https://github.com/wqschain/CarecCall](https://github.com/wqschain/CareCall)
 
 ## License
 

@@ -1,23 +1,22 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from jose import jwt
-from jose.exceptions import JWTError
+from jose import jwt, JWTError
 import httpx
 from typing import Optional
 import os
-from dotenv import load_dotenv
 
 from models.base import engine, Base
 from api import recipients, checkins, auth
-
-load_dotenv()
 
 app = FastAPI(title="CareCall API")
 
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("FRONTEND_URL", "http://localhost:3000")],
+    allow_origins=[
+        "https://carecall.club",
+        "https://www.carecall.club"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,21 +52,25 @@ async def verify_token(token: str = Depends(auth.oauth2_scheme)) -> Optional[str
                     "e": key["e"]
                 }
         if rsa_key:
-            payload = jwt.decode(
-                token,
-                rsa_key,
-                algorithms=ALGORITHMS,
-                audience=AUTH0_AUDIENCE,
-                issuer=f"https://{AUTH0_DOMAIN}/"
-            )
-            return payload["sub"]
-    except JWTError:
+            try:
+                payload = jwt.decode(
+                    token,
+                    rsa_key,
+                    algorithms=ALGORITHMS,
+                    audience=AUTH0_AUDIENCE,
+                    issuer=f"https://{AUTH0_DOMAIN}/"
+                )
+                return payload["sub"]
+            except JWTError:
+                return None
+    except Exception:
         return None
     return None
 
 # Include routers
 app.include_router(recipients.router, prefix="/api", tags=["recipients"])
 app.include_router(checkins.router, prefix="/api", tags=["check-ins"])
+app.include_router(auth.router, prefix="/api", tags=["auth"])
 
 # Create database tables
 @app.on_event("startup")

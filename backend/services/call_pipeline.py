@@ -1,12 +1,10 @@
 import os
 from datetime import datetime
 import vertexai
-from vertexai.language_models import TextGenerationModel
+from vertexai.preview.language_models import TextGenerationModel
+from vertexai.preview.generative_models import GenerativeModel
 from google.cloud import texttospeech, storage
 from twilio.rest import Client
-import openai
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 import asyncio
 import json
 from sqlalchemy.future import select
@@ -18,8 +16,6 @@ from models.base import SessionLocal
 vertexai.init(project=os.getenv("GCP_PROJECT_ID"), location=os.getenv("GCP_REGION"))
 tts_client = texttospeech.TextToSpeechClient()
 twilio_client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_AUTH_TOKEN"))
-sendgrid_client = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 async def generate_script(recipient: Recipient) -> str:
     """Generate conversation script using Vertex AI Gemini"""
@@ -58,13 +54,25 @@ async def text_to_speech(text: str, output_path: str):
         out.write(response.audio_content)
 
 async def transcribe_audio(audio_url: str) -> str:
-    """Transcribe audio using OpenAI Whisper"""
-    audio_response = await asyncio.to_thread(
-        openai.Audio.transcribe,
-        "whisper-1",
-        audio_url
+    """Transcribe audio using Vertex AI Gemini"""
+    model = GenerativeModel("gemini-2.0-flash")
+    
+    # Configure for audio transcription
+    generation_config = {
+        "audioTimestamp": True  # Enable timestamp understanding
+    }
+    
+    # Create the prompt
+    prompt = "Please transcribe this audio file accurately."
+    
+    # Generate the transcription
+    response = await asyncio.to_thread(
+        model.generate_content,
+        [prompt, {"fileUri": audio_url, "mimeType": "audio/mp3"}],
+        generation_config=generation_config
     )
-    return audio_response["text"]
+    
+    return response.text
 
 async def analyze_response(transcript: str, recipient: Recipient) -> tuple[CheckInStatus, str]:
     """Analyze response using Vertex AI Gemini"""
@@ -93,25 +101,10 @@ async def notify_contacts(recipient: Recipient, status: CheckInStatus, notes: st
     if status in [CheckInStatus.CONCERN, CheckInStatus.EMERGENCY]:
         # Send SMS via Twilio
         message = twilio_client.messages.create(
-            body=f"Alert for {recipient.name}: {status.value}\n{notes}",
+            body=f"CareCall Alert for {recipient.name}\nStatus: {status.value}\nCondition: {recipient.condition}\nNotes: {notes}\nTime: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}",
             from_=os.getenv("TWILIO_PHONE_NUMBER"),
             to=recipient.emergency_contact_phone
         )
-
-        # Send email via SendGrid
-        email = Mail(
-            from_email="alerts@carecall.com",
-            to_emails=recipient.emergency_contact_email,
-            subject=f"CareCall Alert for {recipient.name}",
-            html_content=f"""
-            <h2>Alert: {status.value}</h2>
-            <p><strong>Recipient:</strong> {recipient.name}</p>
-            <p><strong>Condition:</strong> {recipient.condition}</p>
-            <p><strong>Notes:</strong> {notes}</p>
-            <p><strong>Time:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
-            """
-        )
-        await asyncio.to_thread(sendgrid_client.send, email)
 
 async def trigger_checkin(recipient_id: int) -> CheckIn:
     """Main function to trigger the check-in call pipeline"""

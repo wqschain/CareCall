@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, EmailStr, constr
+from typing import Optional, List, Annotated
+from pydantic import BaseModel, EmailStr, Field
 
 from models.models import CheckInStatus
 
@@ -22,23 +22,22 @@ class User(UserBase):
 
 class RecipientBase(BaseModel):
     name: str
-    phone_number: constr(regex=r'^\+?1?\d{9,15}$')
+    phone_number: Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]
     condition: str
     preferred_time: str  # HH:MM in UTC
     emergency_contact_name: str
-    emergency_contact_phone: constr(regex=r'^\+?1?\d{9,15}$')
-    emergency_contact_email: EmailStr
+    emergency_contact_phone: Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]
 
 class RecipientCreate(RecipientBase):
     pass
 
 class RecipientUpdate(RecipientBase):
     name: Optional[str] = None
-    phone_number: Optional[constr(regex=r'^\+?1?\d{9,15}$')] = None
+    phone_number: Optional[Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]] = None
     condition: Optional[str] = None
     preferred_time: Optional[str] = None
     emergency_contact_name: Optional[str] = None
-    emergency_contact_phone: Optional[constr(regex=r'^\+?1?\d{9,15}$')] = None
+    emergency_contact_phone: Optional[Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]] = None
     emergency_contact_email: Optional[EmailStr] = None
 
 class Recipient(RecipientBase):
