@@ -12,17 +12,20 @@ const nextConfig = {
     AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET,
     API_BASE_URL: process.env.API_BASE_URL || 'https://api.carecall.club',
   },
-  experimental: {
-    serverActions: true,
-  },
   async redirects() {
     return [
       {
-        source: '/api/auth/callback',
-        destination: '/api/auth/callback/callback',
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.carecall.club',
+          },
+        ],
         permanent: true,
+        destination: 'https://carecall.club/:path*',
       },
-    ]
+    ];
   },
 }
 

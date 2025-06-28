@@ -11,8 +11,9 @@ from api import recipients, checkins, auth
 
 app = FastAPI(title="CareCall API")
 
-# Ensure media directory exists
+# Ensure media and data directories exist
 os.makedirs("media", exist_ok=True)
+os.makedirs("data", exist_ok=True)
 
 # Mount media directory
 app.mount("/media", StaticFiles(directory="media"), name="media")
@@ -22,7 +23,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://carecall.club",
-        "https://www.carecall.club"
+        "https://www.carecall.club",
+        "http://localhost:3000",
+        "https://localhost:3000"
     ],
     allow_credentials=True,
     allow_methods=["*"],
