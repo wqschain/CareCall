@@ -27,6 +27,7 @@ class RecipientBase(BaseModel):
     preferred_time: str  # HH:MM in UTC
     emergency_contact_name: str
     emergency_contact_phone: Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]
+    emergency_contact_email: EmailStr
 
 class RecipientCreate(RecipientBase):
     pass

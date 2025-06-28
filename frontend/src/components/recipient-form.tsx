@@ -20,11 +20,11 @@ import { useToast } from '@/components/ui/use-toast'
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone_number: z.string().regex(/^\+?1?\d{9,15}$/, 'Invalid phone number'),
+  phone_number: z.string().regex(/^\+?1?\d{9,15}$/, 'Invalid phone number format (e.g. +1234567890)'),
   condition: z.string().min(2, 'Condition must be at least 2 characters'),
   preferred_time: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
   emergency_contact_name: z.string().min(2, 'Name must be at least 2 characters'),
-  emergency_contact_phone: z.string().regex(/^\+?1?\d{9,15}$/, 'Invalid phone number'),
+  emergency_contact_phone: z.string().regex(/^\+?1?\d{9,15}$/, 'Invalid phone number format (e.g. +1234567890)'),
   emergency_contact_email: z.string().email('Invalid email address'),
 })
 
@@ -59,24 +59,30 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
+        credentials: 'include',
       })
-      if (!response.ok) throw new Error('Failed to create recipient')
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.detail || 'Failed to create recipient')
+      }
+
       return response.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recipients'] })
       toast({
         title: 'Success',
-        description: 'Recipient has been created.',
+        description: 'Recipient has been created successfully.',
       })
       if (onSuccess) onSuccess()
       router.push('/dashboard')
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to create recipient. Please try again.',
+        description: error.message || 'Failed to create recipient. Please try again.',
       })
     },
   })
