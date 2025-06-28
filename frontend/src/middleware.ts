@@ -5,6 +5,6 @@ export default withMiddlewareAuthRequired();
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/api/(?!auth).*'
+    '/api/(?!auth).*'  // Exclude auth routes from middleware
   ]
 }; 

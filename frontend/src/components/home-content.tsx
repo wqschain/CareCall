@@ -19,7 +19,7 @@ export function HomeContent() {
           <Link href="/api/auth/login">
             <Button size="lg">Get Started</Button>
           </Link>
-          <Link href="https://github.com/yourusername/carecall" target="_blank">
+          <Link href="https://github.com/wqschain/carecall" target="_blank">
             <Button variant="outline" size="lg">View on GitHub</Button>
           </Link>
         </div>
