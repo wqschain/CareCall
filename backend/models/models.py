@@ -1,9 +1,9 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Text, Enum, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from sqlalchemy.dialects.postgresql import JSONB
 
 from .base import Base
+from .enums import CheckInStatus
 
 class User(Base):
     __tablename__ = "users"
@@ -41,12 +41,12 @@ class CheckIn(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     recipient_id = Column(Integer, ForeignKey("recipients.id"))
-    status = Column(String)  # OK, CONCERN, EMERGENCY, NO_ANSWER
+    status = Column(Enum(CheckInStatus), nullable=False)
     transcript = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
     audio_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    call_metadata = Column(JSONB, nullable=True)
+    call_metadata = Column(JSON, nullable=True)
 
     # Relationships
     recipient = relationship("Recipient", back_populates="check_ins") 

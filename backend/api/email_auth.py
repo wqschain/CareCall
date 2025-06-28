@@ -7,19 +7,28 @@ from datetime import datetime, timedelta
 import os
 from typing import Optional
 import secrets
-from resend import Resend
+import resend
 import logging
+from dotenv import load_dotenv
 
 from models.base import SessionLocal
 from models.models import User
 from schemas.schemas import UserCreate, EmailLoginRequest
+
+# Load environment variables
+load_dotenv(verbose=True)
 
 router = APIRouter()
 security = HTTPBearer()
 logger = logging.getLogger("carecall")
 
 # Initialize Resend
-resend = Resend(api_key=os.getenv("RESEND_API_KEY"))
+api_key = os.getenv("RESEND_API_KEY")
+if not api_key:
+    logger.error("RESEND_API_KEY environment variable is not set")
+    raise ValueError("RESEND_API_KEY environment variable is required")
+
+resend.api_key = api_key
 
 # JWT settings
 JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key")  # Change in production
@@ -114,9 +123,9 @@ async def login_email(email: EmailLoginRequest, db: AsyncSession = Depends(get_d
     
     # Send email
     try:
-        resend.emails.send({
-            "from": "CareCall <noreply@carecall.club>",
-            "to": email.email,
+        params = {
+            "from": "onboarding@resend.dev",
+            "to": [email.email],
             "subject": "Your CareCall Login Code",
             "html": f"""
                 <!DOCTYPE html>
@@ -178,7 +187,8 @@ async def login_email(email: EmailLoginRequest, db: AsyncSession = Depends(get_d
                 </body>
                 </html>
             """
-        })
+        }
+        resend.Emails.send(params)
         logger.info(f"Verification code sent to: {email.email}")
         return {"message": "Verification code sent"}
     except Exception as e:

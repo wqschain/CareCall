@@ -8,7 +8,7 @@ import os
 
 from models.models import CheckIn, Recipient, User
 from schemas.schemas import CheckIn as CheckInSchema
-from .auth import get_current_user, get_db
+from .email_auth import get_current_user, get_db
 
 router = APIRouter()
 
@@ -23,7 +23,7 @@ async def get_checkins(
     # Verify recipient belongs to current user
     query = select(Recipient).where(
         Recipient.id == recipient_id,
-        Recipient.caregiver_id == current_user.id
+        Recipient.user_id == current_user.id
     )
     result = await db.execute(query)
     recipient = result.scalar_one_or_none()
@@ -55,7 +55,7 @@ async def get_checkin(
     # Join with Recipient to verify ownership
     query = select(CheckIn).join(Recipient).where(
         CheckIn.id == checkin_id,
-        Recipient.caregiver_id == current_user.id
+        Recipient.user_id == current_user.id
     )
     result = await db.execute(query)
     check_in = result.scalar_one_or_none()

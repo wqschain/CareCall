@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, List, Annotated
 from pydantic import BaseModel, EmailStr, Field
 
-from models.models import CheckInStatus
+from models.enums import CheckInStatus
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -38,6 +38,15 @@ class RecipientBase(BaseModel):
 class RecipientCreate(RecipientBase):
     pass
 
+class RecipientUpdate(BaseModel):
+    name: Optional[str] = None
+    phone_number: Optional[Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]] = None
+    condition: Optional[str] = None
+    preferred_time: Optional[str] = None  # HH:MM in UTC
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[Annotated[str, Field(pattern=r'^\+?1?\d{9,15}$')]] = None
+    emergency_contact_email: Optional[EmailStr] = None
+
 class Recipient(RecipientBase):
     id: int
     user_id: int
@@ -47,8 +56,11 @@ class Recipient(RecipientBase):
     class Config:
         from_attributes = True
 
+class RecipientWithCheckIns(Recipient):
+    check_ins: List["CheckIn"] = []
+
 class CheckInBase(BaseModel):
-    status: str  # OK, CONCERN, EMERGENCY, NO_ANSWER
+    status: CheckInStatus
     transcript: Optional[str] = None
     summary: Optional[str] = None
     audio_url: Optional[str] = None

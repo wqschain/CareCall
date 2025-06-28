@@ -9,7 +9,8 @@ import asyncio
 import json
 from sqlalchemy.future import select
 
-from models.models import Recipient, CheckIn, CheckInStatus
+from models.models import Recipient, CheckIn
+from models.enums import CheckInStatus
 from models.base import SessionLocal
 
 # Initialize clients
