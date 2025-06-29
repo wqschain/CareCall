@@ -200,9 +200,9 @@ async def login_email(email: EmailLoginRequest, db: AsyncSession = Depends(get_d
             detail=f"Failed to send verification code: {str(e)}"
         )
 
-@router.post("/verify")
-async def verify_code(verify_data: VerifyCodeRequest, db: AsyncSession = Depends(get_db)):
-    """Verify email code and return access token"""
+# Create a reusable verify function
+async def _verify_code(verify_data: VerifyCodeRequest, db: AsyncSession) -> dict:
+    """Internal function to verify code and return access token"""
     email = verify_data.email
     code = verify_data.code
     
@@ -228,34 +228,44 @@ async def verify_code(verify_data: VerifyCodeRequest, db: AsyncSession = Depends
         )
     
     if stored["code"] != code:
-        logger.warning(f"Invalid code provided for email: {email}")
+        logger.warning(f"Invalid verification code for email: {email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid verification code"
         )
     
-    # Code is valid, clean up
-    del verification_codes[email]
-    
-    # Get or create user
+    # Code is valid, create or get user
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     
     if not user:
-        logger.info(f"Creating new user for email: {email}")
-        user = User(email=email, name=email.split('@')[0])
+        user = User(email=email)
         db.add(user)
         await db.commit()
+        await db.refresh(user)
     
     # Generate access token
     access_token = create_access_token({"sub": user.email})
     logger.info(f"Generated access token for user: {email}")
     
+    # Clean up used code
+    del verification_codes[email]
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": {"email": user.email, "name": user.name}
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "name": user.name
+        }
     }
+
+@router.post("/verify")
+@router.post("/email/verify")
+async def verify_code(verify_data: VerifyCodeRequest, db: AsyncSession = Depends(get_db)):
+    """Verify email code and return access token"""
+    return await _verify_code(verify_data, db)
 
 @router.get("/me")
 async def get_current_user_info(
