@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,6 +42,9 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // Create a reference to the hidden form
+  const formRef = useRef<HTMLFormElement>(null);
+
   useEffect(() => {
     // Check if we're already logged in
     const token = document.cookie.includes('auth-token');
@@ -61,7 +64,7 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       if (!isCodeSent) {
-        const loginUrl = `${API_URL}/api/auth/login/email`;
+        const loginUrl = `${API_URL}/api/auth/verify`;
         console.log('[DEBUG] Sending code - URL:', loginUrl);
         console.log('[DEBUG] Sending code - Data:', { email: values.email });
 
@@ -70,12 +73,6 @@ export default function LoginPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: values.email }),
-        });
-
-        console.log('[DEBUG] Send code response:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
         });
 
         if (!response.ok) {
@@ -90,12 +87,14 @@ export default function LoginPage() {
           description: 'Please check your email for the verification code.',
         });
       } else {
+        if (isRedirecting) return;
+        setIsRedirecting(true);
         console.log('[DEBUG] Starting verification process...');
+
         const verifyUrl = `${API_URL}/api/auth/verify`;
         console.log('[DEBUG] Verifying code - URL:', verifyUrl);
         console.log('[DEBUG] Verifying code - Data:', { email: values.email, code: values.code });
 
-        // Verify code
         const response = await fetch(verifyUrl, {
           method: 'POST',
           headers: { 
@@ -107,13 +106,8 @@ export default function LoginPage() {
           }),
         });
 
-        console.log('[DEBUG] Verify response:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-
         if (!response.ok) {
+          setIsRedirecting(false);
           const error = await response.json().catch(e => ({ detail: 'Failed to parse error response' }));
           console.error('[DEBUG] Verify error:', error);
           throw new Error(error.detail || 'Invalid verification code');
@@ -131,16 +125,18 @@ export default function LoginPage() {
           description: 'Redirecting to dashboard...',
         });
 
-        // Force a small delay to ensure the cookie is set and toast is shown
-        console.log('[DEBUG] Waiting before redirect...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        console.log('[DEBUG] Redirecting to dashboard...');
-        // Force a hard redirect
-        window.location.href = '/dashboard';
+        // Submit the hidden form to force a full page navigation
+        if (formRef.current) {
+          console.log('[DEBUG] Submitting redirect form...');
+          formRef.current.submit();
+        } else {
+          console.error('[DEBUG] Form ref not found, falling back to window.location');
+          window.location.href = '/dashboard';
+        }
       }
     } catch (error) {
       console.error('[DEBUG] Request failed:', error);
+      setIsRedirecting(false);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -150,76 +146,88 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container flex items-center justify-center min-h-screen py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login to CareCall</CardTitle>
-          <CardDescription>
-            {isCodeSent
-              ? 'Enter the verification code sent to your email'
-              : 'Enter your email to receive a verification code'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Enter your email"
-                        {...field}
-                        disabled={isCodeSent}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {isCodeSent && (
+    <>
+      <div className="container flex items-center justify-center min-h-screen py-12">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Login to CareCall</CardTitle>
+            <CardDescription>
+              {isCodeSent
+                ? 'Enter the verification code sent to your email'
+                : 'Enter your email to receive a verification code'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="code"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Verification Code</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
-                          type="text"
-                          placeholder="Enter verification code"
+                          type="email"
+                          placeholder="Enter your email"
                           {...field}
+                          disabled={isCodeSent}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
 
-              <Button type="submit" className="w-full">
-                {isCodeSent ? 'Verify Code' : 'Send Code'}
-              </Button>
+                {isCodeSent && (
+                  <FormField
+                    control={form.control}
+                    name="code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Verification Code</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="Enter verification code"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
-              {isCodeSent && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setIsCodeSent(false)}
-                >
-                  Try Different Email
+                <Button type="submit" className="w-full">
+                  {isCodeSent ? 'Verify Code' : 'Send Code'}
                 </Button>
-              )}
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+
+                {isCodeSent && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsCodeSent(false)}
+                  >
+                    Try Different Email
+                  </Button>
+                )}
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Hidden form for redirection */}
+      <form
+        ref={formRef}
+        method="GET"
+        action="/dashboard"
+        style={{ display: 'none' }}
+      >
+        <input type="hidden" name="redirect" value="true" />
+      </form>
+    </>
   );
 } 
