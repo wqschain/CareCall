@@ -64,7 +64,7 @@ class CheckInBase(BaseModel):
     transcript: Optional[str] = None
     summary: Optional[str] = None
     audio_url: Optional[str] = None
-    metadata: Optional[dict] = None
+    call_metadata: Optional[dict] = None
 
 class CheckInCreate(CheckInBase):
     recipient_id: int
@@ -73,6 +73,8 @@ class CheckIn(CheckInBase):
     id: int
     recipient_id: int
     created_at: datetime
+    completed_at: Optional[datetime] = None
+    call_sid: Optional[str] = None
 
     class Config:
         from_attributes = True

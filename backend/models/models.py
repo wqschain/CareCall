@@ -46,7 +46,9 @@ class CheckIn(Base):
     summary = Column(Text, nullable=True)
     audio_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
     call_metadata = Column(JSON, nullable=True)
+    call_sid = Column(String, nullable=True)
 
     # Relationships
     recipient = relationship("Recipient", back_populates="check_ins") 

@@ -1,11 +1,13 @@
 "use client"
 
 import { useRouter } from 'next/navigation';
-import { Suspense } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { Suspense, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from './ui/button';
 import { RecipientList } from './recipient-list';
 import { useToast } from './ui/use-toast';
+import { Input } from './ui/input';
+import { Pencil, Check, X } from 'lucide-react';
 
 interface User {
   name: string;
@@ -19,6 +21,9 @@ function LoadingFallback() {
 export default function DashboardContent() {
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
 
   // Fetch user data
   const { data: user, isLoading: userLoading } = useQuery<User>({
@@ -32,6 +37,35 @@ export default function DashboardContent() {
       return response.json();
     },
     retry: false
+  });
+
+  // Name update mutation
+  const updateNameMutation = useMutation({
+    mutationFn: async (newName: string) => {
+      const response = await fetch('/api/auth/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.detail || 'Failed to update name');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      toast({ title: 'Name updated', description: 'Your name has been updated.' });
+      setEditingName(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Failed to update name.',
+      });
+    },
   });
 
   // Fetch recipients
@@ -74,13 +108,69 @@ export default function DashboardContent() {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold">Welcome, {user.name}!</h1>
+          <h1 className="text-4xl font-bold flex items-center gap-2">
+            Welcome,
+            {editingName ? (
+              <>
+                <Input
+                  className="w-auto text-3xl font-bold px-2 py-1"
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  autoFocus
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') updateNameMutation.mutate(nameInput);
+                    if (e.key === 'Escape') setEditingName(false);
+                  }}
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => updateNameMutation.mutate(nameInput)}
+                  disabled={updateNameMutation.isPending}
+                  aria-label="Save name"
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setEditingName(false)}
+                  aria-label="Cancel"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <span
+                  className="cursor-pointer hover:underline"
+                  onClick={() => {
+                    setEditingName(true);
+                    setNameInput(user.name);
+                  }}
+                  title="Click to edit your name"
+                >
+                  {user.name}
+                </span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="ml-1"
+                  onClick={() => {
+                    setEditingName(true);
+                    setNameInput(user.name);
+                  }}
+                  aria-label="Edit name"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+            !
+          </h1>
           <p className="text-muted-foreground">{user.email}</p>
         </div>
         <div className="flex gap-4">
-          <Button onClick={() => router.push('/dashboard/recipients/new')}>
-            Add Recipient
-          </Button>
           <Button variant="outline" onClick={handleLogout}>
             Logout
           </Button>

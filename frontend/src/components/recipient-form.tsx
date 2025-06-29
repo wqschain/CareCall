@@ -31,11 +31,12 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 interface RecipientFormProps {
-  recipient?: FormData
+  recipient?: FormData & { id?: number }
   onSuccess?: () => void
+  isEditing?: boolean
 }
 
-export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
+export function RecipientForm({ recipient, onSuccess, isEditing = false }: RecipientFormProps) {
   const { toast } = useToast()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -55,8 +56,12 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await fetch('/api/recipients', {
-        method: 'POST',
+      const url = isEditing && recipient 
+        ? `/api/recipients/${recipient.id}` 
+        : '/api/recipients'
+      
+      const response = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
         credentials: 'include',
@@ -64,26 +69,71 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
-        throw new Error(errorData?.detail || 'Failed to create recipient')
+        throw new Error(errorData?.detail || `Failed to ${isEditing ? 'update' : 'create'} recipient`)
       }
 
       return response.json()
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recipients'] })
-      toast({
-        title: 'Success',
-        description: 'Recipient has been created successfully.',
-      })
-      if (onSuccess) onSuccess()
-      router.push('/dashboard')
+    onMutate: async (newData) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['recipients'] })
+      if (isEditing && recipient) {
+        await queryClient.cancelQueries({ queryKey: ['recipient', recipient.id] })
+      }
+
+      // Snapshot the previous value
+      const previousRecipients = queryClient.getQueryData(['recipients'])
+      const previousRecipient = isEditing && recipient 
+        ? queryClient.getQueryData(['recipient', recipient.id])
+        : null
+
+      // Optimistically update to the new value
+      if (isEditing && recipient) {
+        queryClient.setQueryData(['recipient', recipient.id], (old: any) => ({
+          ...old,
+          ...newData
+        }))
+      }
+
+      // Return a context object with the snapshotted value
+      return { previousRecipients, previousRecipient }
     },
-    onError: (error: Error) => {
+    onError: (err, newData, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousRecipients) {
+        queryClient.setQueryData(['recipients'], context.previousRecipients)
+      }
+      if (context?.previousRecipient) {
+        queryClient.setQueryData(['recipient', recipient?.id], context.previousRecipient)
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Failed to create recipient. Please try again.',
+        description: err.message || `Failed to ${isEditing ? 'update' : 'create'} recipient. Please try again.`,
       })
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['recipients'] })
+      if (isEditing && recipient) {
+        queryClient.invalidateQueries({ queryKey: ['recipient', recipient.id] })
+      }
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Success',
+        description: `Recipient has been ${isEditing ? 'updated' : 'created'} successfully.`,
+      })
+      
+      // Only redirect for new recipients, not for updates
+      if (!isEditing) {
+        if (onSuccess) onSuccess()
+        router.push('/dashboard')
+      } else {
+        // For updates, just call onSuccess if provided
+        if (onSuccess) onSuccess()
+      }
     },
   })
 
@@ -193,7 +243,7 @@ export function RecipientForm({ recipient, onSuccess }: RecipientFormProps) {
         />
 
         <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Saving...' : 'Save Recipient'}
+          {mutation.isPending ? 'Saving...' : `${isEditing ? 'Update' : 'Save'} Recipient`}
         </Button>
       </form>
     </Form>

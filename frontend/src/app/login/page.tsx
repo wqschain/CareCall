@@ -24,7 +24,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 console.log('[DEBUG] API_URL:', API_URL);
 
 const formSchema = z.object({
@@ -63,7 +63,7 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       if (!isCodeSent) {
-        const loginUrl = `${API_URL}/api/auth/verify`;
+        const loginUrl = `${API_URL}/api/auth/login/email`;
         console.log('[DEBUG] Sending code - URL:', loginUrl);
         console.log('[DEBUG] Sending code - Data:', { email: values.email });
 

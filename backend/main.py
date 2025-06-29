@@ -72,7 +72,10 @@ async def health_check():
 # Include routers
 app.include_router(email_auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(recipients.router, prefix="/api/recipients", tags=["recipients"])
-app.include_router(checkins.router, prefix="/api/checkins", tags=["checkins"])
+app.include_router(checkins.router, prefix="/api", tags=["checkins"])
+
+# Serve static files (for generated audio)
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 # Create database tables
 @app.on_event("startup")
@@ -102,6 +105,9 @@ async def startup():
             logger.info("Creating database tables...")
             await conn.run_sync(Base.metadata.create_all)
             
+        print(f"[CareCall Startup] Vertex AI Project: {os.getenv('GCP_PROJECT_ID')}")
+        print(f"[CareCall Startup] Vertex AI Region: {os.getenv('GCP_REGION')}")
+        
         logger.info("Application startup complete")
     except Exception as e:
         logger.error(f"Startup failed: {str(e)}")

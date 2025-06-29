@@ -276,4 +276,22 @@ async def get_current_user_info(
         "id": current_user.id,
         "email": current_user.email,
         "name": current_user.name
+    }
+
+@router.put("/me")
+async def update_current_user_name(
+    data: dict,  # expects {"name": "New Name"}
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    new_name = data.get("name")
+    if not new_name or not isinstance(new_name, str) or not new_name.strip():
+        raise HTTPException(status_code=400, detail="Name is required and must be a non-empty string.")
+    current_user.name = new_name.strip()
+    await db.commit()
+    await db.refresh(current_user)
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "name": current_user.name
     } 
