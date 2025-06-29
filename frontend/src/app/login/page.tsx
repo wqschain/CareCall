@@ -90,9 +90,7 @@ export default function LoginPage() {
           description: 'Please check your email for the verification code.',
         });
       } else {
-        if (isRedirecting) return; // Prevent multiple submissions
-        setIsRedirecting(true);
-
+        console.log('[DEBUG] Starting verification process...');
         const verifyUrl = `${API_URL}/api/auth/verify`;
         console.log('[DEBUG] Verifying code - URL:', verifyUrl);
         console.log('[DEBUG] Verifying code - Data:', { email: values.email, code: values.code });
@@ -118,30 +116,31 @@ export default function LoginPage() {
         if (!response.ok) {
           const error = await response.json().catch(e => ({ detail: 'Failed to parse error response' }));
           console.error('[DEBUG] Verify error:', error);
-          setIsRedirecting(false);
           throw new Error(error.detail || 'Invalid verification code');
         }
 
         const data = await response.json();
-        console.log('[DEBUG] Verify success:', data);
+        console.log('[DEBUG] Verify success, got data:', data);
         
         // Store the token
         document.cookie = `auth-token=${data.access_token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
+        console.log('[DEBUG] Set auth-token cookie');
         
         toast({
           title: 'Success',
-          description: 'You have been logged in successfully.',
+          description: 'Redirecting to dashboard...',
         });
 
-        // Add a small delay to ensure the cookie is set
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Force a small delay to ensure the cookie is set and toast is shown
+        console.log('[DEBUG] Waiting before redirect...');
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Force a hard navigation to the dashboard
+        console.log('[DEBUG] Redirecting to dashboard...');
+        // Force a hard redirect
         window.location.href = '/dashboard';
       }
     } catch (error) {
       console.error('[DEBUG] Request failed:', error);
-      setIsRedirecting(false);
       toast({
         variant: 'destructive',
         title: 'Error',
