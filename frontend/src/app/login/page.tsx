@@ -70,9 +70,15 @@ export default function LoginPage() {
         });
       } else {
         // Verify code - using query parameters as expected by the backend
-        const response = await fetch(`${API_URL}/api/auth/verify?email=${encodeURIComponent(values.email)}&code=${encodeURIComponent(values.code!)}`, {
+        const verifyUrl = new URL('/api/auth/verify', API_URL);
+        verifyUrl.searchParams.append('email', values.email);
+        verifyUrl.searchParams.append('code', values.code!);
+        
+        const response = await fetch(verifyUrl.toString(), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({}),
         });
 
