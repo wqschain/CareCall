@@ -2,58 +2,31 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-export async function middleware(request: NextRequest) {
-  // Public paths that don't require authentication
-  const publicPaths = ['/login', '/api/auth/login/email', '/api/auth/verify'];
-  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
+// Paths that don't require authentication
+const publicPaths = ['/login'];
 
-  if (isPublicPath) {
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get('auth-token');
+  const { pathname } = request.nextUrl;
+
+  // Allow public paths
+  if (publicPaths.some(path => pathname.startsWith(path))) {
+    // If user is already logged in and tries to access login page,
+    // redirect to dashboard
+    if (token && pathname === '/login') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
     return NextResponse.next();
   }
 
-  // Check for auth token in cookie
-  const token = request.cookies.get('auth-token')?.value;
+  // Check if user is authenticated
   if (!token) {
-    console.log('[Auth] No token found, redirecting to login');
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('from', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  try {
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      throw new Error('JWT_SECRET not configured');
-    }
-
-    // Verify JWT token
-    const verified = await jwtVerify(
-      token,
-      new TextEncoder().encode(JWT_SECRET)
-    );
-
-    // For API routes, add the Authorization header
-    const requestHeaders = new Headers(request.headers);
-    if (request.nextUrl.pathname.startsWith('/api/')) {
-      requestHeaders.set('Authorization', `Bearer ${token}`);
-    }
-    requestHeaders.set('x-user-email', verified.payload.sub as string);
-
-    // Return the response with modified headers
-    const response = NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-
-    return response;
-  } catch (error) {
-    console.error('[Auth] Token verification failed:', error);
-    
-    // Clear the invalid token and redirect to login
-    const response = NextResponse.redirect(new URL('/login', request.url));
-    response.cookies.delete('auth-token');
-    
-    return response;
-  }
+  return NextResponse.next();
 }
 
 // Update matcher to protect all routes except public ones
@@ -61,12 +34,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * 1. /api/auth/login/email, /api/auth/verify (auth endpoints)
-     * 2. /login (login page)
-     * 3. /_next (Next.js internals)
-     * 4. /static (static files)
-     * 5. /favicon.ico, /robots.txt (static files)
+     * 1. /api/* (API routes)
+     * 2. /_next/* (Next.js internals)
+     * 3. /fonts/* (inside public directory)
+     * 4. /favicon.ico, /sitemap.xml (static files)
      */
-    '/((?!api/auth/login/email|api/auth/verify|login|_next|static|favicon.ico|robots.txt).*)',
+    '/((?!api|_next|fonts|favicon.ico|sitemap.xml).*)',
   ],
 } 

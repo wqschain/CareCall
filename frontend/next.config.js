@@ -7,23 +7,16 @@ const nextConfig = {
     domains: ['carecall-media.s3.amazonaws.com'],
   },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) {
+      throw new Error('NEXT_PUBLIC_API_URL is not defined');
+    }
+
     return [
       {
-        source: '/api/auth/login/email',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/email`,
-      },
-      {
-        source: '/api/auth/verify',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`,
-      },
-      {
-        source: '/api/auth/email/verify',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`,
-      },
-      {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`,
-      },
+        destination: `${apiUrl}/api/:path*`,
+      }
     ]
   },
 }
