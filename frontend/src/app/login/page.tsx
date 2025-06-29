@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-console.log('API_URL:', API_URL);
+console.log('[DEBUG] API_URL:', API_URL);
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -52,18 +52,26 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       if (!isCodeSent) {
-        console.log('Sending verification code to:', values.email);
-        // Request verification code using ngrok URL directly
-        const response = await fetch(`https://e0a3-173-206-116-74.ngrok-free.app/api/auth/login/email`, {
+        const loginUrl = `${API_URL}/api/auth/login/email`;
+        console.log('[DEBUG] Sending code - URL:', loginUrl);
+        console.log('[DEBUG] Sending code - Data:', { email: values.email });
+
+        // Request verification code
+        const response = await fetch(loginUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: values.email }),
         });
 
-        console.log('Send code response status:', response.status);
+        console.log('[DEBUG] Send code response:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
         if (!response.ok) {
           const error = await response.json();
-          console.error('Send code error:', error);
+          console.error('[DEBUG] Send code error:', error);
           throw new Error(error.detail || 'Failed to send verification code');
         }
 
@@ -73,26 +81,36 @@ export default function LoginPage() {
           description: 'Please check your email for the verification code.',
         });
       } else {
-        // Verify code - using ngrok URL directly
-        const response = await fetch(`https://e0a3-173-206-116-74.ngrok-free.app/api/auth/verify?email=${encodeURIComponent(values.email)}&code=${encodeURIComponent(values.code!)}`, {
+        const verifyUrl = `${API_URL}/api/auth/verify`;
+        console.log('[DEBUG] Verifying code - URL:', verifyUrl);
+        console.log('[DEBUG] Verifying code - Data:', { email: values.email, code: values.code });
+
+        // Verify code
+        const response = await fetch(verifyUrl, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            email: values.email,
+            code: values.code
+          }),
         });
 
-        console.log('Verify response status:', response.status);
-        console.log('Verify response headers:', Object.fromEntries(response.headers.entries()));
-        
+        console.log('[DEBUG] Verify response:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
         if (!response.ok) {
           const error = await response.json().catch(e => ({ detail: 'Failed to parse error response' }));
-          console.error('Verify error:', error);
+          console.error('[DEBUG] Verify error:', error);
           throw new Error(error.detail || 'Invalid verification code');
         }
 
         const data = await response.json();
-        console.log('Verify success, received token');
+        console.log('[DEBUG] Verify success:', data);
         
         // Store the token
         document.cookie = `auth-token=${data.access_token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
@@ -105,7 +123,7 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (error) {
-      console.error('Request failed:', error);
+      console.error('[DEBUG] Request failed:', error);
       toast({
         variant: 'destructive',
         title: 'Error',

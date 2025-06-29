@@ -202,24 +202,37 @@ async def login_email(email: EmailLoginRequest, db: AsyncSession = Depends(get_d
 
 @router.post("/verify")
 async def verify_code(email: str, code: str, db: AsyncSession = Depends(get_db)):
-    """Verify the code and return access token"""
-    logger.info(f"Verification attempt for email: {email}")
+    """Verify email code and return access token"""
+    logger.info(f"Verifying code for email: {email}")
+    logger.debug(f"Received code: {code}")
     
-    stored = verification_codes.get(email)
-    if not stored or stored["code"] != code:
-        logger.warning(f"Invalid verification code for email: {email}")
+    if email not in verification_codes:
+        logger.warning(f"No verification code found for email: {email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid verification code"
+            detail="No verification code found for this email"
         )
     
+    stored = verification_codes[email]
+    logger.debug(f"Stored verification data: {stored}")
+    
     if datetime.utcnow() > stored["expires"]:
-        logger.warning(f"Expired verification code for email: {email}")
+        logger.warning(f"Verification code expired for email: {email}")
         del verification_codes[email]
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Verification code has expired"
         )
+    
+    if stored["code"] != code:
+        logger.warning(f"Invalid code provided for email: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification code"
+        )
+    
+    # Code is valid, clean up
+    del verification_codes[email]
     
     # Get or create user
     result = await db.execute(select(User).where(User.email == email))
@@ -227,27 +240,18 @@ async def verify_code(email: str, code: str, db: AsyncSession = Depends(get_db))
     
     if not user:
         logger.info(f"Creating new user for email: {email}")
-        new_user = UserCreate(email=email, name=email.split("@")[0])
-        db_user = User(**new_user.dict())
-        db.add(db_user)
+        user = User(email=email, name=email.split('@')[0])
+        db.add(user)
         await db.commit()
-        await db.refresh(db_user)
-        user = db_user
     
-    # Create access token
-    access_token = create_access_token({"sub": email})
+    # Generate access token
+    access_token = create_access_token({"sub": user.email})
+    logger.info(f"Generated access token for user: {email}")
     
-    # Clean up verification code
-    del verification_codes[email]
-    
-    logger.info(f"Successful login for user: {email}")
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": {
-            "email": user.email,
-            "name": user.name
-        }
+        "user": {"email": user.email, "name": user.name}
     }
 
 @router.get("/me")
