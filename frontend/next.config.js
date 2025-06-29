@@ -17,14 +17,6 @@ const nextConfig = {
         destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`,
       },
       {
-        source: '/api/auth/email/verify',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`,
-      },
-      {
-        source: '/api/auth/verify/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify/:path*`,
-      },
-      {
         source: '/api/:path*',
         destination: `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`,
       },

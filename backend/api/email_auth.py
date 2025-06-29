@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from models.base import SessionLocal
 from models.models import User
-from schemas.schemas import UserCreate, EmailLoginRequest
+from schemas.schemas import UserCreate, EmailLoginRequest, VerifyCodeRequest
 
 # Load environment variables
 load_dotenv(verbose=True)
@@ -201,8 +201,11 @@ async def login_email(email: EmailLoginRequest, db: AsyncSession = Depends(get_d
         )
 
 @router.post("/verify")
-async def verify_code(email: str, code: str, db: AsyncSession = Depends(get_db)):
+async def verify_code(verify_data: VerifyCodeRequest, db: AsyncSession = Depends(get_db)):
     """Verify email code and return access token"""
+    email = verify_data.email
+    code = verify_data.code
+    
     logger.info(f"Verifying code for email: {email}")
     logger.debug(f"Received code: {code}")
     
