@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,13 +42,12 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Create a reference to the hidden form
-  const formRef = useRef<HTMLFormElement>(null);
-
   useEffect(() => {
     // Check if we're already logged in
     const token = document.cookie.includes('auth-token');
+    console.log('[DEBUG] Initial auth check - Token exists:', token);
     if (token) {
+      console.log('[DEBUG] Token found, redirecting to dashboard');
       router.push('/dashboard');
     }
   }, [router]);
@@ -104,6 +103,7 @@ export default function LoginPage() {
             email: values.email,
             code: values.code
           }),
+          credentials: 'include'
         });
 
         if (!response.ok) {
@@ -116,23 +116,22 @@ export default function LoginPage() {
         const data = await response.json();
         console.log('[DEBUG] Verify success, got data:', data);
         
+        if (!data.access_token) {
+          throw new Error('No access token received from server');
+        }
+        
         // Store the token
         document.cookie = `auth-token=${data.access_token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
         console.log('[DEBUG] Set auth-token cookie');
         
         toast({
           title: 'Success',
-          description: 'Redirecting to dashboard...',
+          description: 'Login successful! Redirecting...',
         });
 
-        // Submit the hidden form to force a full page navigation
-        if (formRef.current) {
-          console.log('[DEBUG] Submitting redirect form...');
-          formRef.current.submit();
-        } else {
-          console.error('[DEBUG] Form ref not found, falling back to window.location');
-          window.location.href = '/dashboard';
-        }
+        // Force a hard redirect to dashboard
+        console.log('[DEBUG] Redirecting to dashboard...');
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       console.error('[DEBUG] Request failed:', error);
@@ -146,88 +145,76 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <div className="container flex items-center justify-center min-h-screen py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Login to CareCall</CardTitle>
-            <CardDescription>
-              {isCodeSent
-                ? 'Enter the verification code sent to your email'
-                : 'Enter your email to receive a verification code'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <div className="container flex items-center justify-center min-h-screen py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Login to CareCall</CardTitle>
+          <CardDescription>
+            {isCodeSent
+              ? 'Enter the verification code sent to your email'
+              : 'Enter your email to receive a verification code'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email"
+                        {...field}
+                        disabled={isCodeSent}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {isCodeSent && (
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="code"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Verification Code</FormLabel>
                       <FormControl>
                         <Input
-                          type="email"
-                          placeholder="Enter your email"
+                          type="text"
+                          placeholder="Enter verification code"
                           {...field}
-                          disabled={isCodeSent}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              )}
 
-                {isCodeSent && (
-                  <FormField
-                    control={form.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Verification Code</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="text"
-                            placeholder="Enter verification code"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+              <Button type="submit" className="w-full">
+                {isCodeSent ? 'Verify Code' : 'Send Code'}
+              </Button>
 
-                <Button type="submit" className="w-full">
-                  {isCodeSent ? 'Verify Code' : 'Send Code'}
+              {isCodeSent && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIsCodeSent(false)}
+                >
+                  Try Different Email
                 </Button>
-
-                {isCodeSent && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setIsCodeSent(false)}
-                  >
-                    Try Different Email
-                  </Button>
-                )}
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Hidden form for redirection */}
-      <form
-        ref={formRef}
-        method="GET"
-        action="/dashboard"
-        style={{ display: 'none' }}
-      >
-        <input type="hidden" name="redirect" value="true" />
-      </form>
-    </>
+              )}
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 } 
