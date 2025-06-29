@@ -48,9 +48,9 @@ export default function LoginPage() {
     console.log('[DEBUG] Initial auth check - Token exists:', token);
     if (token) {
       console.log('[DEBUG] Token found, redirecting to dashboard');
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     }
-  }, [router]);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,7 +63,7 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       if (!isCodeSent) {
-        const loginUrl = `${API_URL}/api/auth/verify`;
+        const loginUrl = `${API_URL}/api/auth/login/email`;
         console.log('[DEBUG] Sending code - URL:', loginUrl);
         console.log('[DEBUG] Sending code - Data:', { email: values.email });
 
@@ -121,8 +121,9 @@ export default function LoginPage() {
         }
         
         // Store the token
+        console.log('[DEBUG] Setting auth-token cookie...');
         document.cookie = `auth-token=${data.access_token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
-        console.log('[DEBUG] Set auth-token cookie');
+        console.log('[DEBUG] Cookie set, verifying cookie exists:', document.cookie.includes('auth-token'));
         
         toast({
           title: 'Success',
@@ -131,6 +132,7 @@ export default function LoginPage() {
 
         // Force a hard redirect to dashboard
         console.log('[DEBUG] Redirecting to dashboard...');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for cookie to be set
         window.location.href = '/dashboard';
       }
     } catch (error) {
