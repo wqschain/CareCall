@@ -126,11 +126,27 @@ async def handle_voice_webhook(request: Request):
                       "If you need any assistance, please contact your caregiver. "
                       "Take care and have a wonderful day!")
         
+        # Clean up script for Twilio TTS compatibility
+        if script:
+            # Remove any problematic characters that might cause Twilio TTS issues
+            script = script.replace('"', '"').replace('"', '"')  # Smart quotes to regular quotes
+            script = script.replace(''', "'").replace(''', "'")  # Smart apostrophes
+            script = script.replace('–', '-').replace('—', '-')  # Em dashes to regular dashes
+            script = script.replace('…', '...')  # Ellipsis
+            script = script.replace('\n', ' ')  # Remove newlines
+            script = script.replace('\r', ' ')  # Remove carriage returns
+            script = ' '.join(script.split())  # Normalize whitespace
+            print(f"Cleaned script: {script[:100]}...")
+        
         # Create TwiML response
         response = VoiceResponse()
         
         # Play the generated script directly
-        response.say(script)
+        if script:
+            response.say(script, voice='alice', language='en-US')
+        else:
+            response.say("Hello! This is Nora from CareCall. We hope you're doing well today. If you need any assistance, please contact your caregiver. Take care and have a wonderful day!", voice='alice', language='en-US')
+        
         response.pause(length=2)  # Add a 2-second pause after the message
         
         twiml_response = str(response)
@@ -145,10 +161,16 @@ async def handle_voice_webhook(request: Request):
         traceback.print_exc()
         
         # Return a simple error response
-        response = VoiceResponse()
-        response.say("We're experiencing technical difficulties. Please try again later.")
-        response.hangup()
-        return Response(content=str(response), media_type="text/xml")
+        try:
+            response = VoiceResponse()
+            response.say("We're experiencing technical difficulties. Please try again later.", voice='alice', language='en-US')
+            response.hangup()
+            return Response(content=str(response), media_type="text/xml")
+        except Exception as fallback_error:
+            print(f"Fallback error response failed: {fallback_error}")
+            # Return minimal valid TwiML
+            minimal_response = '<?xml version="1.0" encoding="UTF-8"?><Response><Say>Hello from CareCall. Please try again later.</Say></Response>'
+            return Response(content=minimal_response, media_type="text/xml")
 
 @router.post("/twilio/recording-complete")
 async def handle_recording_complete(request: Request):

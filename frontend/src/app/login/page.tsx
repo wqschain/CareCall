@@ -145,19 +145,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container flex items-center justify-center min-h-screen py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login to CareCall</CardTitle>
-          <CardDescription>
+    <div className="container flex items-center justify-center min-h-screen py-12 bg-gradient-to-br from-blue-950 via-purple-950 to-background animate-fade-in">
+      <Card className="w-full max-w-md shadow-2xl border-0 relative animate-card-pop">
+        {/* Glowing border */}
+        <div className="absolute -inset-1 rounded-2xl pointer-events-none z-0 animate-glow-border" />
+        <CardHeader className="relative z-10">
+          <CardTitle className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-gradient-x">Login to CareCall</CardTitle>
+          <CardDescription className="text-base text-muted-foreground animate-fade-in-delay">
             {isCodeSent
               ? 'Enter the verification code sent to your email'
               : 'Enter your email to receive a verification code'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative z-10">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="email"
@@ -170,6 +172,7 @@ export default function LoginPage() {
                         placeholder="Enter your email"
                         {...field}
                         disabled={isCodeSent}
+                        className="focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
                       />
                     </FormControl>
                     <FormMessage />
@@ -189,6 +192,7 @@ export default function LoginPage() {
                           type="text"
                           placeholder="Enter verification code"
                           {...field}
+                          className="focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-all"
                         />
                       </FormControl>
                       <FormMessage />
@@ -197,24 +201,33 @@ export default function LoginPage() {
                 />
               )}
 
-              <Button type="submit" className="w-full">
-                {isCodeSent ? 'Verify Code' : 'Send Code'}
+              <Button type="submit" className="w-full font-bold py-2 transition-transform duration-200 hover:scale-105 shadow-lg animate-fade-in-delay2">
+                {isCodeSent ? (isRedirecting ? 'Verifying...' : 'Verify Code') : 'Send Code'}
               </Button>
-
-              {isCodeSent && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setIsCodeSent(false)}
-                >
-                  Try Different Email
-                </Button>
-              )}
             </form>
           </Form>
         </CardContent>
       </Card>
+      {/* Animations and custom styles */}
+      <style jsx global>{`
+        .animate-fade-in { animation: fadeIn 1s ease; }
+        .animate-fade-in-delay { animation: fadeIn 1.5s ease; }
+        .animate-fade-in-delay2 { animation: fadeIn 2s ease; }
+        .animate-card-pop { animation: cardPop 0.8s cubic-bezier(.22,1,.36,1); }
+        .animate-glow-border {
+          background: linear-gradient(120deg, #3b82f6 0%, #6366f1 50%, #a5b4fc 100%);
+          opacity: 0.25;
+          filter: blur(4px);
+          z-index: 0;
+          border-radius: 1rem;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes cardPop { from { opacity: 0; transform: scale(0.95) translateY(40px); } to { opacity: 1; transform: none; } }
+        @keyframes gradientX {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+      `}</style>
     </div>
   );
 } 

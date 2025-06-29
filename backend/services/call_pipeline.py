@@ -47,12 +47,21 @@ async def trigger_checkin(recipient_id: int) -> CheckIn:
         await db.refresh(check_in)
 
         try:
+            # Debug BASE_URL
+            base_url = os.getenv('BASE_URL')
+            webhook_url = f"{base_url}/api/twilio/voice-webhook"
+            print(f"Making Twilio call with webhook URL: {webhook_url}")
+            print(f"To: {recipient.phone_number}")
+            print(f"From: {os.getenv('TWILIO_PHONE_NUMBER')}")
+            
             # Make call with Twilio (simple message only, no recording)
             call = twilio_client.calls.create(
-                url=f"{os.getenv('BASE_URL')}/api/twilio/voice-webhook",
+                url=webhook_url,
                 to=recipient.phone_number,
                 from_=os.getenv("TWILIO_PHONE_NUMBER")
             )
+
+            print(f"Twilio call created successfully with SID: {call.sid}")
 
             # Update check-in with call SID
             check_in.call_sid = call.sid

@@ -34,7 +34,7 @@ origins = [
     "http://localhost:3000",
     "https://carecall.club",
     "https://www.carecall.club",
-    "https://e0a3-173-206-116-74.ngrok-free.app",  # Add your current ngrok URL
+    "https://6271-141-117-117-63.ngrok-free.app",  # Updated ngrok URL
     "http://localhost:3001",  # In case you're running Next.js on a different port
 ]
 
