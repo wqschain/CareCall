@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
@@ -14,26 +14,30 @@ load_dotenv(verbose=True)
 
 # Configure logging
 logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=os.getenv("LOG_LEVEL", "DEBUG").upper(),  # Set default to DEBUG for more info
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(pathname)s:%(lineno)d',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger("carecall")
 
-# Debug: Print environment variables
+# Debug: Print environment variables and configuration
+logger.debug("Environment Configuration:")
 logger.debug(f"RESEND_API_KEY set: {'RESEND_API_KEY' in os.environ}")
 logger.debug(f"JWT_SECRET set: {'JWT_SECRET' in os.environ}")
 logger.debug(f"LOG_LEVEL: {os.getenv('LOG_LEVEL')}")
+logger.debug(f"Current working directory: {os.getcwd()}")
 
 app = FastAPI(title="CareCall API")
 
-# Configure CORS
+# Configure CORS with logging
 origins = [
     "http://localhost:3000",
     "https://carecall.club",
     "https://www.carecall.club",
-    "https://e0a3-173-206-116-74.ngrok-free.app",
+    "*"  # Allow all origins during development
 ]
+
+logger.debug(f"Configured CORS origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +46,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.debug(f"Incoming request: {request.method} {request.url}")
+    logger.debug(f"Request headers: {request.headers}")
+    response = await call_next(request)
+    logger.debug(f"Response status: {response.status_code}")
+    return response
 
 # Health check endpoint
 @app.get("/health")
