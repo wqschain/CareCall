@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,8 +38,17 @@ const formSchema = z.object({
 
 export default function LoginPage() {
   const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if we're already logged in
+    const token = document.cookie.includes('auth-token');
+    if (token) {
+      router.push('/dashboard');
+    }
+  }, [router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,6 +90,9 @@ export default function LoginPage() {
           description: 'Please check your email for the verification code.',
         });
       } else {
+        if (isRedirecting) return; // Prevent multiple submissions
+        setIsRedirecting(true);
+
         const verifyUrl = `${API_URL}/api/auth/verify`;
         console.log('[DEBUG] Verifying code - URL:', verifyUrl);
         console.log('[DEBUG] Verifying code - Data:', { email: values.email, code: values.code });
@@ -106,6 +118,7 @@ export default function LoginPage() {
         if (!response.ok) {
           const error = await response.json().catch(e => ({ detail: 'Failed to parse error response' }));
           console.error('[DEBUG] Verify error:', error);
+          setIsRedirecting(false);
           throw new Error(error.detail || 'Invalid verification code');
         }
 
@@ -120,10 +133,15 @@ export default function LoginPage() {
           description: 'You have been logged in successfully.',
         });
 
-        router.push('/dashboard');
+        // Add a small delay to ensure the cookie is set
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Force a hard navigation to the dashboard
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       console.error('[DEBUG] Request failed:', error);
+      setIsRedirecting(false);
       toast({
         variant: 'destructive',
         title: 'Error',
